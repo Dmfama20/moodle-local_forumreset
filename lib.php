@@ -124,7 +124,7 @@ function list_all_discussions($forumID, $courseid) {
 
    
    $table = new html_table();
-   $table->head = array( 'Titel' , 'Author');
+   $table->head = array( 'Titel' , 'Author','posts','show posts');
    // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
 
   foreach($discussions as $entry)  {
@@ -136,10 +136,12 @@ function list_all_discussions($forumID, $courseid) {
         'discussionid'=>$entry->id
     ));
 
+    $link = html_writer::link($url, 'posts');
 
     $user=$DB->get_record('user',['id'=>$entry->userid]);
+    $countposts=$DB->count_records('forum_posts',['discussion'=>$entry->id]);
 
-       $table->data[] = array($entry->name,$user->lastname.', '.$user->firstname);
+       $table->data[] = array($entry->name,$user->lastname.', '.$user->firstname,$countposts -1,$link);
   }
 
 
@@ -166,8 +168,9 @@ function list_all_posts($forumID, $courseid,$discussionid) {
    // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
 
   foreach($posts as $entry)  {
+      $user=$DB->get_record('user',['id'=>$entry->userid]);
 
-       $table->data[] = array(clean_param($entry->subject,PARAM_TEXT),clean_param($entry->message,PARAM_TEXT),$entry->userid);
+       $table->data[] = array(clean_param($entry->subject,PARAM_TEXT),clean_param($entry->message,PARAM_TEXT),$user->lastname.', '.$user->firstname);
   }
 
 
@@ -180,16 +183,37 @@ function list_all_posts($forumID, $courseid,$discussionid) {
  * @param int    $courseid   ID of the course
  * @return array table of activities
  */
-function reset_all_discussions($forumID,$courseID) {
+function reset_all_discussions($forumID,$courseID,$data) {
     global $DB;
    $discussions=$DB->get_records('forum_discussions',['forum'=>$forumID,'course'=>$courseID]);
+   
    foreach($discussions as $entry)  {
        $posts=$DB->get_records('forum_posts',['discussion'=>$entry->id]);
-       foreach($posts as $postentry)    {
-           if($entry->firstpost!=$postentry->id)    {
-               $DB->delete_records('forum_posts',['id'=>$postentry->id]);
-           }
+       if(in_array($entry->id, $data->selectdiscussions) )  {
+            //Keep first level posts of this discussion
+            foreach($posts as $postentry)    {
+                if($entry->firstpost!=$postentry->id )    {
+                    if($postentry->parent==$entry->firstpost && $entry->userid!=$postentry->userid)   {
+                        $DB->delete_records('forum_posts',['id'=>$postentry->id]);
+                    }
+                    if($postentry->parent!=$entry->firstpost)   {
+                        $DB->delete_records('forum_posts',['id'=>$postentry->id]);
+                    }
+                    
+                    
+                }
+            }
+
        }
+       else{
+           //Delete first level posts, too.
+        foreach($posts as $postentry)    {
+            if($entry->firstpost!=$postentry->id)    {
+                $DB->delete_records('forum_posts',['id'=>$postentry->id]);
+            }
+        }
+       }
+      
 
    }
 

@@ -48,18 +48,21 @@ $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('standard');
 // Set page layout.
 
-$PAGE->set_title($SITE->fullname . ': ' . "Reset Discussion");
+$PAGE->set_title($SITE->fullname . ': ' . "Show Discussions");
 $PAGE->set_heading($SITE->fullname);
 // $PAGE->set_url(new moodle_url('/local/dexmod/index.php'));
 $PAGE->navbar->ignore_active(true);
 // $PAGE->navbar->add("Dexpmod", new moodle_url('/local/dexpmod/index.php'));
-$PAGE->navbar->add("Reset Discussion", new moodle_url($url));
+$PAGE->navbar->add("Show Discussions", new moodle_url($url));
 $PAGE->set_pagelayout('admin');
 
 $mform = new resetdiscussion_form( null, array('courseid'=>$courseID, 'forumid'=>$forumID,'discussionid'=>$discussionID));
 
 
 if($data = $mform->get_data()) {
+    $url_back=new moodle_url('/local/forumreset/reset_forum.php',
+    array('courseid' => $courseID, 'forumid'=>$forumID,));
+    redirect($url_back);
 
     
 }
@@ -70,7 +73,7 @@ else {
 
 echo $OUTPUT->header();
 $discussion=$DB->get_record('forum_discussions',['id'=>$discussionID]);
-echo $OUTPUT->heading('Reset '.$discussion->name.'?' ,5);
+echo $OUTPUT->heading('All posts of '.$discussion->name.':' ,5);
 $table=list_all_posts($forumID,$courseID,$discussionID);
 echo html_writer::table($table);
 //display the form

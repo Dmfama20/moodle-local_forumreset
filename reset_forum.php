@@ -60,7 +60,7 @@ $mform = new resetforum_form( null, array('courseid'=>$courseID, 'forumid'=>$for
 
 if($data = $mform->get_data()) {
 
-    reset_all_discussions($forumID,$courseID);
+     reset_all_discussions($forumID,$courseID,$data);
 }
 
 else {
@@ -69,11 +69,12 @@ else {
 
 echo $OUTPUT->header();
 $forum=$DB->get_record('forum',['id'=>$forumID]);
-echo $OUTPUT->heading('Reset '.$forum->name.'?' ,5);
+echo $OUTPUT->heading('Reset '.$forum->name  ,5);
+$mform->display();
 $table=list_all_discussions($forumID,$courseID);
 echo html_writer::table($table);
-//display the form
-$mform->display();
+
+
 
 
 

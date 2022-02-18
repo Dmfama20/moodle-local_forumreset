@@ -29,8 +29,7 @@ require_once("$CFG->libdir/formslib.php");
 class resetforum_form extends moodleform {
     //Add elements to form
     public function definition() {
-        global $CFG;
-        global $PAGE;
+        global $PAGE,$DB;
 
        
         $mform = $this->_form; // Don't forget the underscore! 
@@ -42,6 +41,22 @@ class resetforum_form extends moodleform {
             $mform->addElement('hidden', $name, $value);
             $mform->setType($name, PARAM_RAW);
         }
+        $mform->addElement('advcheckbox', 'keepfirstlevelpost', 'Keep first level posts');
+        $infotext='In der Tabelle unten finden Sie alle Diskussionen des Forums. Wählen Sie <i>keep first level posts</i> 
+        (=Antworten vom Author auf seinen Eröffnungsbeitrag) um die Diskussionen auszuwählen bei denen diese erhalten bleiben sollen.';
+        $mform->addElement('static', 'infotext', '', $infotext);
+        $mform->hideif('infotext', 'keepfirstlevelpost', 'eq', '0');
+
+        $discussions=$DB->get_records('forum_discussions',['forum'=>$this->_customdata['forumid']]);
+        $discussionsarray=array();
+        foreach($discussions as $entry) {
+            $discussionsarray[$entry->id]= $entry->name;
+        }
+        $mform->addElement('select', 'selectdiscussions', 'first level post erhalten', $discussionsarray);  
+        $mform->getElement('selectdiscussions')->setMultiple(true);
+        $mform->getElement('selectdiscussions')->setSize(count($discussionsarray));    
+        $mform->setAdvanced('selectdiscussions', true);
+        $mform->hideif('selectdiscussions', 'keepfirstlevelpost', 'eq', '0');
   
 
         $this->add_action_buttons($cancel = true, $submitlabel='Reset all discussions!');
@@ -71,7 +86,7 @@ class resetdiscussion_form extends moodleform {
         }
   
 
-        $this->add_action_buttons($cancel = true, $submitlabel='Reset discussion!');
+        $this->add_action_buttons($cancel = false, $submitlabel='Zurück!');
     
     }
     // //Custom validation should be added here
