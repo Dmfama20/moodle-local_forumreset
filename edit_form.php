@@ -59,7 +59,7 @@ class resetforum_form extends moodleform {
         $mform->hideif('selectdiscussions', 'keepfirstlevelpost', 'eq', '0');
   
 
-        $this->add_action_buttons($cancel = true, $submitlabel='Reset all discussions!');
+        $this->add_action_buttons($cancel = false, $submitlabel='Reset all discussions!');
     
     }
     // //Custom validation should be added here

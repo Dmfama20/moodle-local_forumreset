@@ -57,7 +57,18 @@ echo $OUTPUT->header();
 
 $table=list_all_forums($courseID);
 
-echo html_writer::table($table);
+if(count($table->data)==0)    {    
+   echo $OUTPUT->heading('Dieser Kurs enthält keine Foren!',2);
+}
+else{
+    echo html_writer::table($table);
+}
+
+$backurl=new moodle_url('/course/view.php', array('id' => $courseID ));
+ echo $OUTPUT->single_button($backurl, 'Zurück zum Kurs');
+
+
+
 
 
 echo $OUTPUT->footer();

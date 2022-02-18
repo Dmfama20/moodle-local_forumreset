@@ -28,7 +28,7 @@ require_once('lib.php');
 
  require_login();
 
-global $CFG, $DB, $PAGE;
+global $CFG, $DB, $PAGE,$USER;
 $courseID = required_param('courseid', PARAM_INT);
 $forumID = required_param('forumid', PARAM_INT);
 
@@ -60,7 +60,10 @@ $mform = new resetforum_form( null, array('courseid'=>$courseID, 'forumid'=>$for
 
 if($data = $mform->get_data()) {
 
-     reset_all_discussions($forumID,$courseID,$data);
+     reset_all_discussions($forumID,$courseID,$data,$USER->id);
+     $url_back=new moodle_url('/local/forumreset/reset_forum.php',
+     array('courseid' => $courseID, 'forumid'=>$forumID,));
+     redirect($url_back,'Foren wurden zurückgesetzt!');
 }
 
 else {
@@ -73,6 +76,8 @@ echo $OUTPUT->heading('Reset '.$forum->name  ,5);
 $mform->display();
 $table=list_all_discussions($forumID,$courseID);
 echo html_writer::table($table);
+$backurl=new moodle_url('/course/view.php', array('id' => $courseID ));
+ echo $OUTPUT->single_button($backurl, 'Zurück zum Kurs');
 
 
 

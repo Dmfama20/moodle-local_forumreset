@@ -32,7 +32,7 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context) {
     }
 
     // Only let users with the appropriate capability see this settings item.
-    if (!has_capability('moodle/backup:backupcourse', context_course::instance($PAGE->course->id))) {
+    if (!has_capability('mod/forum:deleteanypost', context_course::instance($PAGE->course->id))) {
         return;
     }
 
@@ -45,7 +45,7 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context) {
             navigation_node::NODETYPE_LEAF,
             'forumreset',
             'forumreset',
-            new pix_icon('i/scheduled', 'Forumreset')
+            new pix_icon('t/left', 'Forumreset')
         );
         if ($PAGE->url->compare($url, URL_MATCH_BASE)) {
             $foonode->make_active();
@@ -99,7 +99,13 @@ function list_all_forums($courseID) {
         'courseid'=> $courseID,
         'forumid' =>$entry->id
     ));
+    if($DB->record_exists('forum_discussions',['forum'=> $entry->id]))   {
         $link = html_writer::link($url, 'reset');
+    }
+    else{
+        $link='Diese Forum enthält keine Fragen!';
+    }
+        
 
        $table->data[] = array($entry->name,$entry->type, $link);
   }
@@ -183,9 +189,19 @@ function list_all_posts($forumID, $courseid,$discussionid) {
  * @param int    $courseid   ID of the course
  * @return array table of activities
  */
-function reset_all_discussions($forumID,$courseID,$data) {
-    global $DB;
+function reset_all_discussions($forumID,$courseID,$data,$userid) {
+    global $DB,$PAGE;
+
+
+    // Only let users with the appropriate capability see this settings item.
+    if (!has_capability('mod/forum:deleteanypost', context_course::instance($PAGE->course->id))) {
+        $url_back=new moodle_url('/course/view.php',
+        array('id' => $courseID));
+        redirect($url_back, 'sie haben nicht die passenden Berechtigungen!',null, \core\output\notification::NOTIFY_ERROR);
+    }
    $discussions=$DB->get_records('forum_discussions',['forum'=>$forumID,'course'=>$courseID]);
+
+
    
    foreach($discussions as $entry)  {
        $posts=$DB->get_records('forum_posts',['discussion'=>$entry->id]);
