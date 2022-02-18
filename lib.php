@@ -24,10 +24,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 function local_forumreset_extend_settings_navigation($settingsnav, $context) {
-    global $CFG, $PAGE;
+    global $CFG, $PAGE, $DB;
 
     // Only add this settings item on non-site course pages.
     if (!$PAGE->course or $PAGE->course->id == 1) {
+        return;
+    }
+    //Check is Forums available
+    if ($DB->count_records('forum',['course'=>$PAGE->course->id]) == 0) {
         return;
     }
 
