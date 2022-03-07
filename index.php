@@ -37,7 +37,7 @@ $url = new moodle_url('/local/forumreset/index.php', $currentparams);
 $PAGE->set_url($url);
 
 
-if (!has_capability('mod/forum:deleteanypost', context_course::instance($courseID))) {
+if (!has_capability('moodle/site:config', context_system::instance())) {
     $url_back=new moodle_url('/my');
     redirect($url_back, 'sie haben nicht die passenden Berechtigungen!',null, \core\output\notification::NOTIFY_ERROR);
 }

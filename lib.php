@@ -36,7 +36,7 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context) {
     }
 
     // Only let users with the appropriate capability see this settings item.
-    if (!has_capability('mod/forum:deleteanypost', context_course::instance($PAGE->course->id))) {
+    if (!has_capability('moodle/site:config', context_system::instance())) {
         return;
     }
 
@@ -198,7 +198,7 @@ function reset_all_discussions($forumID,$courseID,$data,$userid) {
 
 
     // Only let users with the appropriate capability see this settings item.
-    if (!has_capability('mod/forum:deleteanypost', context_course::instance($courseID))) {
+    if (!has_capability('moodle/site:config', context_system::instance())) {
         $url_back=new moodle_url('/course/view.php',
         array('id' => $courseID));
         redirect($url_back, 'sie haben nicht die passenden Berechtigungen!',null, \core\output\notification::NOTIFY_ERROR);
