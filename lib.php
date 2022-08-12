@@ -23,7 +23,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-function local_forumreset_extend_settings_navigation($settingsnav, $context) {
+function local_forumreset_extend_settings_navigation($settingsnav, $context)
+{
     global $CFG, $PAGE, $DB;
 
     // Only add this settings item on non-site course pages.
@@ -31,7 +32,7 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context) {
         return;
     }
     //Check is Forums available
-    if ($DB->count_records('forum',['course'=>$PAGE->course->id]) == 0) {
+    if ($DB->count_records('forum', ['course' => $PAGE->course->id]) == 0) {
         return;
     }
 
@@ -41,10 +42,10 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context) {
     }
 
     if ($settingnode = $settingsnav->find('courseadmin', navigation_node::TYPE_COURSE)) {
-        $strfoo = 'Reset Forum';
+        $name = 'Forum Reset';
         $url = new moodle_url('/local/forumreset/index.php', array('id' => $PAGE->course->id));
-        $foonode = navigation_node::create(
-            $strfoo,
+        $node = navigation_node::create(
+            $name,
             $url,
             navigation_node::NODETYPE_LEAF,
             'forumreset',
@@ -52,9 +53,9 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context) {
             new pix_icon('t/left', 'Forumreset')
         );
         if ($PAGE->url->compare($url, URL_MATCH_BASE)) {
-            $foonode->make_active();
+            $node->make_active();
         }
-        $settingnode->add_node($foonode);
+        $settingnode->add_node($node);
     }
 }
 
@@ -68,12 +69,13 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context) {
  * @param string $forceorder An override for the course order setting
  * @return array Activities with completion settings in the course
  */
-function local_forumreset_get_forums($courseid) {
+function local_forumreset_get_forums($courseid)
+{
     global $DB;
-    $records=$DB->get_records('forum',['course'=>$courseid]);
-    $forums=array();
-    foreach($records as $r)   {
-        $forums[]=$r;   
+    $records = $DB->get_records('forum', ['course' => $courseid]);
+    $forums = array();
+    foreach ($records as $r) {
+        $forums[] = $r;
     }
     return $forums;
 }
@@ -82,39 +84,101 @@ function local_forumreset_get_forums($courseid) {
 
 
 /**
+ * Returns ALL activities with completion set in current course
+ *
+ * @param int    $courseid   ID of the course
+ * @param int    $config     The block instance configuration
+ * @param string $forceorder An override for the course order setting
+ * @return array Activities with completion settings in the course
+ */
+function local_forumreset_get_activities($courseid, $config = null, $forceorder = null)
+{
+    $modinfo = get_fast_modinfo($courseid, -1);
+    $sections = $modinfo->get_sections();
+    $activities = array();
+    foreach ($modinfo->instances as $module => $instances) {
+        // List only forums!
+        if ($module != "forum") {
+            continue;
+        }
+        $modulename = get_string('pluginname', $module);
+        foreach ($instances as $index => $cm) {
+            if (
+                $cm->completion != COMPLETION_TRACKING_NONE && ($config == null || (!isset($config->activitiesincluded) || ($config->activitiesincluded != 'selectedactivities' ||
+                    !empty($config->selectactivities) &&
+                    in_array($module . '-' . $cm->instance, $config->selectactivities))))
+            ) {
+                $activities[] = array(
+                    'type'       => $module,
+                    'modulename' => $modulename,
+                    'id'         => $cm->id,
+                    'instance'   => $cm->instance,
+                    'name'       => format_string($cm->name),
+                    'expected'   => $cm->completionexpected,
+                    'section'    => $cm->sectionnum,
+                    'position'   => array_search($cm->id, $sections[$cm->sectionnum]),
+                    'url'        => method_exists($cm->url, 'out') ? $cm->url->out() : '',
+                    'context'    => $cm->context,
+                    'icon'       => $cm->get_icon_url(),
+                    'available'  => $cm->available,
+                    'visible'  => $cm->visible,
+                );
+            }
+        }
+    }
+
+    // // Sort by first value in each element, which is time due.
+    // if ($forceorder == 'orderbycourse' || ($config && $config->orderby == 'orderbycourse')) {
+    //     usort($activities, 'block_completion_progress_compare_events');
+    // } else {
+    //     usort($activities, 'block_completion_progress_compare_times');
+    // }
+
+    return $activities;
+}
+
+/**
  * Returns the activities with completion set in current course
  *
  * @param int    $courseid   ID of the course
  * @return array table of activities
  */
-function list_all_forums($courseID) {
+function list_all_forums($courseID)
+{
     global $DB;
-   //Standard values without submitting the form
+    //Standard values without submitting the form
 
-   $forums = local_forumreset_get_forums($courseID);
-   
-   $table = new html_table();
-   $table->head = array( 'Forum' , 'Typ', 'Reset Forum');
-   // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
+    $forums = local_forumreset_get_activities($courseID);
 
-  foreach($forums as $entry)  {
 
-    $url = new moodle_url('/local/forumreset/reset_forum.php', array(
-        'courseid'=> $courseID,
-        'forumid' =>$entry->id
-    ));
-    if($DB->record_exists('forum_discussions',['forum'=> $entry->id]))   {
-        $link = html_writer::link($url, 'reset');
+    $table = new html_table();
+    $table->head = array('Forum', 'Typ', 'Reset Forum');
+    // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
+
+    foreach ($forums as $entry) {
+        // // List only visible forums!
+        if ($entry['visible'] == "0") {
+            continue;
+        }
+
+        $forumdetails = $DB->get_record('forum', ['id' => $entry['instance'], 'course' => $courseID]);
+
+
+        $url = new moodle_url('/local/forumreset/reset_forum.php', array(
+            'courseid' => $courseID,
+            'forumid' => $forumdetails->id
+        ));
+        if ($DB->record_exists('forum_discussions', ['forum' => $forumdetails->id])) {
+            $link = html_writer::link($url, 'reset');
+        } else {
+            $link = 'Diese Forum enthält keine Fragen!';
+        }
+
+
+        $table->data[] = array($forumdetails->name, $forumdetails->type, $link);
     }
-    else{
-        $link='Diese Forum enthält keine Fragen!';
-    }
-        
 
-       $table->data[] = array($entry->name,$entry->type, $link);
-  }
-
-  return $table;
+    return $table;
 }
 
 
@@ -124,38 +188,37 @@ function list_all_forums($courseID) {
  * @param int    $courseid   ID of the course
  * @return array table of activities
  */
-function list_all_discussions($forumID, $courseid) {
+function list_all_discussions($forumID, $courseid)
+{
     global $DB;
-   //Standard values without submitting the form
+    //Standard values without submitting the form
 
-   $discussions = $DB->get_records('forum_discussions',['forum'=>$forumID]);
+    $discussions = $DB->get_records('forum_discussions', ['forum' => $forumID]);
 
     // throw new dml_exception(var_dump($discussions));
 
-   
-   $table = new html_table();
-   $table->head = array( 'Titel' , 'Author','posts','show posts');
-   // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
 
-  foreach($discussions as $entry)  {
+    $table = new html_table();
+    $table->head = array('Titel', 'Author', 'posts', 'show posts');
+    // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
 
-    // $user=$DB->get_records('user',['id'=>$entry->userid]);
-    $url = new moodle_url('/local/forumreset/reset_discussion.php', array(
-        'courseid'=> $courseid,
-        'forumid' =>$forumID,
-        'discussionid'=>$entry->id
-    ));
+    foreach ($discussions as $entry) {
 
-    $link = html_writer::link($url, 'posts');
+        // $user=$DB->get_records('user',['id'=>$entry->userid]);
+        $url = new moodle_url('/local/forumreset/reset_discussion.php', array(
+            'courseid' => $courseid,
+            'forumid' => $forumID,
+            'discussionid' => $entry->id
+        ));
 
-    $user=$DB->get_record('user',['id'=>$entry->userid]);
-    $countposts=$DB->count_records('forum_posts',['discussion'=>$entry->id]);
+        $link = html_writer::link($url, 'posts');
 
-       $table->data[] = array($entry->name,$user->lastname.', '.$user->firstname,$countposts -1,$link);
-  }
+        $user = $DB->get_record('user', ['id' => $entry->userid]);
+        $countposts = $DB->count_records('forum_posts', ['discussion' => $entry->id]);
 
-
-  return $table;
+        $table->data[] = array($entry->name, $user->lastname . ', ' . $user->firstname, $countposts - 1, $link);
+    }
+    return $table;
 }
 
 /**
@@ -164,81 +227,100 @@ function list_all_discussions($forumID, $courseid) {
  * @param int    $courseid   ID of the course
  * @return array table of activities
  */
-function list_all_posts($forumID, $courseid,$discussionid) {
+function list_all_posts($forumID, $courseid, $discussionid)
+{
     global $DB;
-   //Standard values without submitting the form
+    //Standard values without submitting the form
 
-   $posts = $DB->get_records('forum_posts',['discussion'=>$discussionid]);
+    $posts = $DB->get_records('forum_posts', ['discussion' => $discussionid]);
 
     // throw new dml_exception(var_dump($discussions));
 
-   
-   $table = new html_table();
-   $table->head = array( 'Thema' , 'Post','User');
-   // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
 
-  foreach($posts as $entry)  {
-      $user=$DB->get_record('user',['id'=>$entry->userid]);
+    $table = new html_table();
+    $table->head = array('Thema', 'Post', 'User');
+    // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
 
-       $table->data[] = array(clean_param($entry->subject,PARAM_TEXT),clean_param($entry->message,PARAM_TEXT),$user->lastname.', '.$user->firstname);
-  }
+    foreach ($posts as $entry) {
+        $user = $DB->get_record('user', ['id' => $entry->userid]);
+
+        $table->data[] = array(clean_param($entry->subject, PARAM_TEXT), clean_param($entry->message, PARAM_TEXT), $user->lastname . ', ' . $user->firstname);
+    }
 
 
-  return $table;
+    return $table;
 }
 
 /**
- * Returns the activities with completion set in current course
+ * Resets all discussions on the current forum
  *
  * @param int    $courseid   ID of the course
  * @return array table of activities
  */
-function reset_all_discussions($forumID,$courseID,$data,$userid) {
-    global $DB,$PAGE;
+function reset_all_discussions($forumID, $courseID, $data, $userid)
+{
+    global $DB;
 
 
     // Only let users with the appropriate capability see this settings item.
     if (!has_capability('moodle/site:config', context_system::instance())) {
-        $url_back=new moodle_url('/course/view.php',
-        array('id' => $courseID));
-        redirect($url_back, 'sie haben nicht die passenden Berechtigungen!',null, \core\output\notification::NOTIFY_ERROR);
+        $url_back = new moodle_url(
+            '/course/view.php',
+            array('id' => $courseID)
+        );
+        redirect($url_back, 'sie haben nicht die passenden Berechtigungen!', null, \core\output\notification::NOTIFY_ERROR);
     }
-   $discussions=$DB->get_records('forum_discussions',['forum'=>$forumID,'course'=>$courseID]);
+    $discussions = $DB->get_records('forum_discussions', ['forum' => $forumID, 'course' => $courseID]);
 
 
-   
-   foreach($discussions as $entry)  {
-       $posts=$DB->get_records('forum_posts',['discussion'=>$entry->id]);
-       if(in_array($entry->id, $data->selectdiscussions) )  {
+
+    foreach ($discussions as $entry) {
+        $posts = $DB->get_records('forum_posts', ['discussion' => $entry->id]);
+        if (in_array($entry->id, $data->selectdiscussions)) {
             //Keep first level posts of this discussion
-            foreach($posts as $postentry)    {
-                if($entry->firstpost!=$postentry->id )    {
-                    if($postentry->parent==$entry->firstpost && $entry->userid!=$postentry->userid)   {
-                        $DB->delete_records('forum_posts',['id'=>$postentry->id]);
+            foreach ($posts as $postentry) {
+                if ($entry->firstpost != $postentry->id) {
+                    if ($postentry->parent == $entry->firstpost && $entry->userid != $postentry->userid) {
+                        $DB->delete_records('forum_posts', ['id' => $postentry->id]);
                     }
-                    if($postentry->parent!=$entry->firstpost)   {
-                        $DB->delete_records('forum_posts',['id'=>$postentry->id]);
+                    if ($postentry->parent != $entry->firstpost) {
+                        $DB->delete_records('forum_posts', ['id' => $postentry->id]);
                     }
-                    
-                    
                 }
             }
-
-       }
-       else{
-           //Delete first level posts, too.
-        foreach($posts as $postentry)    {
-            if($entry->firstpost!=$postentry->id)    {
-                $DB->delete_records('forum_posts',['id'=>$postentry->id]);
+        } else {
+            //Delete first level posts, too.
+            foreach ($posts as $postentry) {
+                if ($entry->firstpost != $postentry->id) {
+                    $DB->delete_records('forum_posts', ['id' => $postentry->id]);
+                }
             }
         }
-       }
-      
+    }
 
-   }
-
-  return ;
+    return;
 }
 
+/**
+ * Resets all discussions on the current forum
+ *
+ * @param int    $courseid   ID of the course
+ * @return array table of activities
+ */
+function delete_all_content($forumID, $courseID, $data)
+{
+    global $DB;
 
+    $discussions = $DB->get_records('forum_discussions', ['forum' => $forumID, 'course' => $courseID]);
 
+    foreach ($discussions as $entry) {
+        // Delete all posts of this discussion first
+        $posts = $DB->get_records('forum_posts', ['discussion' => $entry->id]);
+        foreach ($posts as $postentry) {
+            $DB->delete_records('forum_posts', ['id' => $postentry->id]);
+        }
+        // Afterwards delete also this discussion
+        $DB->delete_records('forum_discussions', ['id' => $entry->id, 'forum' => $forumID, 'course' => $courseID]);
+    }
+    return;
+}

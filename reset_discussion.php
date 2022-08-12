@@ -24,9 +24,9 @@
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once('lib.php');
- require_once('edit_form.php');
+require_once('edit_form.php');
 
- require_login();
+require_login();
 
 global $CFG, $DB, $PAGE;
 $courseID = required_param('courseid', PARAM_INT);
@@ -34,7 +34,7 @@ $forumID = required_param('forumid', PARAM_INT);
 $discussionID = required_param('discussionid', PARAM_INT);
 
 
-$currentparams = ['courseid' => $courseID, 'forumid'=>$forumID,'discussionid'=> $discussionID];
+$currentparams = ['courseid' => $courseID, 'forumid' => $forumID, 'discussionid' => $discussionID];
 $url = new moodle_url('/local/forumreset/reset_discussion.php', $currentparams);
 $PAGE->set_url($url);
 
@@ -56,25 +56,22 @@ $PAGE->navbar->ignore_active(true);
 $PAGE->navbar->add("Show Discussions", new moodle_url($url));
 $PAGE->set_pagelayout('admin');
 
-$mform = new resetdiscussion_form( null, array('courseid'=>$courseID, 'forumid'=>$forumID,'discussionid'=>$discussionID));
+$mform = new resetdiscussion_form(null, array('courseid' => $courseID, 'forumid' => $forumID, 'discussionid' => $discussionID));
 
 
-if($data = $mform->get_data()) {
-    $url_back=new moodle_url('/local/forumreset/reset_forum.php',
-    array('courseid' => $courseID, 'forumid'=>$forumID,));
+if ($data = $mform->get_data()) {
+    $url_back = new moodle_url(
+        '/local/forumreset/reset_forum.php',
+        array('courseid' => $courseID, 'forumid' => $forumID,)
+    );
     redirect($url_back);
-
-    
-}
-
-else {
-  
+} else {
 }
 
 echo $OUTPUT->header();
-$discussion=$DB->get_record('forum_discussions',['id'=>$discussionID]);
-echo $OUTPUT->heading('All posts of '.$discussion->name.':' ,5);
-$table=list_all_posts($forumID,$courseID,$discussionID);
+$discussion = $DB->get_record('forum_discussions', ['id' => $discussionID]);
+echo $OUTPUT->heading('All posts of ' . $discussion->name . ':', 5);
+$table = list_all_posts($forumID, $courseID, $discussionID);
 echo html_writer::table($table);
 //display the form
 $mform->display();
