@@ -37,7 +37,7 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context)
     }
 
     // Only let users with the appropriate capability see this settings item.
-    if (!has_capability('moodle/site:config', context_system::instance())) {
+    if (!has_capability('local/forumreset:resetforum', context_system::instance())) {
         return;
     }
 
@@ -263,7 +263,7 @@ function reset_all_discussions($forumID, $courseID, $data, $userid)
 
 
     // Only let users with the appropriate capability see this settings item.
-    if (!has_capability('moodle/site:config', context_system::instance())) {
+    if (!has_capability('local/forumreset:resetforum', context_system::instance())) {
         $url_back = new moodle_url(
             '/course/view.php',
             array('id' => $courseID)

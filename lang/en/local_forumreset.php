@@ -23,3 +23,4 @@
  */
 
 $string['pluginname'] = 'Reset Forum';
+$string['forumreset:resetforum'] = 'reset forum';
