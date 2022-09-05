@@ -27,6 +27,6 @@ $capabilities = array(
      // Whether or not the user can reset forums
      'local/forumreset:resetforum' => array(
         'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
+        'contextlevel' => CONTEXT_COURSE,
     ),
 );

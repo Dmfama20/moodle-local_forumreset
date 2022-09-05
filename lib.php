@@ -26,7 +26,6 @@ defined('MOODLE_INTERNAL') || die();
 function local_forumreset_extend_settings_navigation($settingsnav, $context)
 {
     global $CFG, $PAGE, $DB;
-
     // Only add this settings item on non-site course pages.
     if (!$PAGE->course or $PAGE->course->id == 1) {
         return;
@@ -37,10 +36,9 @@ function local_forumreset_extend_settings_navigation($settingsnav, $context)
     }
 
     // Only let users with the appropriate capability see this settings item.
-    if (!has_capability('local/forumreset:resetforum', context_system::instance())) {
+    if (!has_capability('local/forumreset:resetforum', context_course::instance($PAGE->course->id))) {
         return;
     }
-
     if ($settingnode = $settingsnav->find('courseadmin', navigation_node::TYPE_COURSE)) {
         $name = 'Forum Reset';
         $url = new moodle_url('/local/forumreset/index.php', array('id' => $PAGE->course->id));
@@ -147,10 +145,7 @@ function list_all_forums($courseID)
 {
     global $DB;
     //Standard values without submitting the form
-
     $forums = local_forumreset_get_activities($courseID);
-
-
     $table = new html_table();
     $table->head = array('Forum', 'Typ', 'Reset Forum');
     // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
@@ -160,10 +155,7 @@ function list_all_forums($courseID)
         if ($entry['visible'] == "0") {
             continue;
         }
-
         $forumdetails = $DB->get_record('forum', ['id' => $entry['instance'], 'course' => $courseID]);
-
-
         $url = new moodle_url('/local/forumreset/reset_forum.php', array(
             'courseid' => $courseID,
             'forumid' => $forumdetails->id
@@ -173,11 +165,8 @@ function list_all_forums($courseID)
         } else {
             $link = 'Diese Forum enthält keine Fragen!';
         }
-
-
         $table->data[] = array($forumdetails->name, $forumdetails->type, $link);
     }
-
     return $table;
 }
 
@@ -192,16 +181,11 @@ function list_all_discussions($forumID, $courseid)
 {
     global $DB;
     //Standard values without submitting the form
-
     $discussions = $DB->get_records('forum_discussions', ['forum' => $forumID]);
-
     // throw new dml_exception(var_dump($discussions));
-
-
     $table = new html_table();
     $table->head = array('Titel', 'Author', 'posts', 'show posts');
     // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
-
     foreach ($discussions as $entry) {
 
         // $user=$DB->get_records('user',['id'=>$entry->userid]);
@@ -215,7 +199,6 @@ function list_all_discussions($forumID, $courseid)
 
         $user = $DB->get_record('user', ['id' => $entry->userid]);
         $countposts = $DB->count_records('forum_posts', ['discussion' => $entry->id]);
-
         $table->data[] = array($entry->name, $user->lastname . ', ' . $user->firstname, $countposts - 1, $link);
     }
     return $table;
@@ -231,12 +214,8 @@ function list_all_posts($forumID, $courseid, $discussionid)
 {
     global $DB;
     //Standard values without submitting the form
-
     $posts = $DB->get_records('forum_posts', ['discussion' => $discussionid]);
-
     // throw new dml_exception(var_dump($discussions));
-
-
     $table = new html_table();
     $table->head = array('Thema', 'Post', 'User');
     // echo $OUTPUT->heading('Kursinformationen: '.get_course($courseID)->fullname  ,2);
@@ -260,10 +239,10 @@ function list_all_posts($forumID, $courseid, $discussionid)
 function reset_all_discussions($forumID, $courseID, $data, $userid)
 {
     global $DB;
-
-
-    // Only let users with the appropriate capability see this settings item.
-    if (!has_capability('local/forumreset:resetforum', context_system::instance())) {
+    // Only let users with the appropriate be able to reset forums.
+    $course = $DB->get_record('course', ['id' => $courseID]);
+    $coursecontext = context_course::instance($course->id);
+    if (!has_capability('local/forumreset:resetforum', $coursecontext)) {
         $url_back = new moodle_url(
             '/course/view.php',
             array('id' => $courseID)
@@ -271,8 +250,6 @@ function reset_all_discussions($forumID, $courseID, $data, $userid)
         redirect($url_back, 'sie haben nicht die passenden Berechtigungen!', null, \core\output\notification::NOTIFY_ERROR);
     }
     $discussions = $DB->get_records('forum_discussions', ['forum' => $forumID, 'course' => $courseID]);
-
-
 
     foreach ($discussions as $entry) {
         $posts = $DB->get_records('forum_posts', ['discussion' => $entry->id]);

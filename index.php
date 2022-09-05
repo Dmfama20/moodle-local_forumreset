@@ -33,8 +33,10 @@ $courseID = required_param('id', PARAM_INT);
 $currentparams = ['id' => $courseID];
 $url = new moodle_url('/local/forumreset/index.php', $currentparams);
 $PAGE->set_url($url);
+$course = $DB->get_record('course', ['id' => $courseID]);
+$coursecontext = context_course::instance($course->id);
 
-if (!has_capability('local/forumreset:resetforum', context_system::instance())) {
+if (!has_capability('local/forumreset:resetforum', $coursecontext)) {
     $url_back = new moodle_url('/my');
     redirect($url_back, 'sie haben nicht die passenden Berechtigungen!', null, \core\output\notification::NOTIFY_ERROR);
 }
