@@ -20,6 +20,7 @@
  * @package     local_forumreset
  * @copyright   2022 Alexander Dominicus, Bochum University of Applied Science <alexander.dominicus@hs-bochum.de>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * 
  */
 
 defined('MOODLE_INTERNAL') || die();
