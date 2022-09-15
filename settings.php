@@ -15,13 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * You may have settings in your plugin
- *
- * @package    local_forumreset
- * @copyright  2014 Daniel Neis
- * @license    http://www.gnu.org/copyleft/gpl.html gnu gpl v3 or later
+ * Local plugin "ForumReset" - settings.php
+ * *
+ * @package     local_forumreset
+ * @copyright   2022 Alexander Dominicus, Bochum University of Applied Science <alexander.dominicus@hs-bochum.de>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+ 
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {

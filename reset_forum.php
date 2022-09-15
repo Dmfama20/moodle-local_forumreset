@@ -16,10 +16,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Local Differentiator main view.
- *
+ * Local plugin "ForumReset" - reset_forum.php
+ * *
+ * @package     local_forumreset
+ * @copyright   2022 Alexander Dominicus, Bochum University of Applied Science <alexander.dominicus@hs-bochum.de>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 require_once __DIR__.'/../../config.php';
 require_once $CFG->libdir.'/adminlib.php';
 require_once 'lib.php';
